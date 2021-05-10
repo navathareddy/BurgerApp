@@ -1,0 +1,176 @@
+import { nullLiteral } from "@babel/types";
+import { Divider, Grid, makeStyles } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { TextField } from "@material-ui/core";
+import React, { useEffect, useState } from "react";
+import { Interface } from "readline";
+import { number } from "yargs";
+import Controls from "./controls/Controls";
+
+interface IUpdatedEstimates {
+  [index: number] : {measureID: number,
+  nodeRegionID: number,
+  pnlValue: number, 
+  DateTime: number,}
+}
+
+interface IUpdatedEstimate {
+  measureID: number,
+  nodeRegionID: number,
+  pnlValue: number, 
+  DateTime: number,
+}
+
+const Calculation = () => {
+  const [updatedEstimates, setEstimates] = useState(new Array<IUpdatedEstimate>()) ; // estimates that we add based on the value that we type into the input feild
+  const [originalEstimates] = useState(); //original estimates that comes from db
+  const [pnlMeasures, setMeasures] = useState<number>(); // based on this we add the controls dynamically
+  
+
+  //mock data for pnlMeasures that i get from db
+  //Array of 6 - it means i should see 6 textboxes on the UI
+  const pnlMeasuresdata = [
+    {
+      measureGroupId: 1,
+      measureID: 1,
+      measureName: "P&L ($)",
+      nodeRegionID: 42838,
+    },
+    {
+      measureGroupId: 3,
+      measureID: 6,
+      measureName: "Delta ($)",
+      nodeRegionID: 42838,
+    },
+    {
+      measureGroupId: 3,
+      measureID: 7,
+      measureName: "Gamma ($)",
+      nodeRegionID: 42838,
+    },
+    {
+      measureGroupId: 3,
+      measureID: 9,
+      measureName: "Theta ($)",
+      nodeRegionID: 42838,
+    },
+    {
+      measureGroupId: 6,
+      measureID: 15,
+      measureName: "New Trades ($)",
+      nodeRegionID: 42838,
+    },
+    {
+      measureGroupId: 6,
+      measureID: 14,
+      measureName: "Market Moves ($)",
+      nodeRegionID: 42838,
+    },
+  ];
+
+  //mockdata for Estimates
+  //Scenario-1 : Estimates array might be empty
+  //scenario -2 :estimates might have objects with values for input feilds
+  //Measures and Estimates have measureId in common and need to bind value to textfeild accordingly
+  // two textfeilds out of 6 we have added will have input values (pnlValue). the other textboxes should be empty
+  const originalEstimatesdata = [
+    //note new estimate that we add doesnt have estimateID
+    {
+      measureID: 1,
+      nodeRegionID: 42838,
+      pnlValue: 220, // this is textfeild value
+      DateTime: new Date(),
+    },
+    // already if estimate exists it has estimateID that we get from originalEstimates
+    {
+      estimateID: 3487943,
+      measureGroupId: 6,
+      measureID: 14,
+      nodeRegionID: 42838,
+      pnlValue: 10, // this is textfeild value
+      DateTime: new Date(),
+    },
+  ];
+
+  // if i add a value to textfeild which has measureID 15 then it should add a new object into updatedEstimateState with these value mentioned below
+  // this is the array i will send to db
+  const updatedEstimatesdata1 = [
+    {
+      estimateID: 584494,
+      measureGroupId: 1,
+      measureID: 1,
+      nodeRegionID: 42838,
+      pnlValue: 10, // when we add a new value to empty textfeild the object should get added to this array
+    },
+  ];
+
+  //when i update the value in the Textfeils which is already present then i should see two object one new object and the other one with updated object with updated value
+  const updatedEstimatesdata2 = [
+    {
+      estimateID: 584494,
+      measureGroupId: 1,
+      measureID: 1,
+      nodeRegionID: 42838,
+      pnlValue: 10, // when we add a new value to empty textfeild the object should get added to this array
+    },
+    {
+      estimateID: 3487943,
+      measureGroupId: 6,
+      measureID: 14,
+      nodeRegionID: 42838,
+      pnlValue: 90, // new updated value from 10-90
+    },
+  ];
+  
+  let [pnlValuesArr, setArray] = useState(new Array<number>(pnlMeasuresdata.length)); 
+  
+  for(var i = 0; i < pnlValuesArr.length; i++){
+    if(originalEstimatesdata[i] != null){
+      pnlValuesArr[i] = originalEstimatesdata[i].pnlValue
+    }
+  }
+
+  let tempUpdate :IUpdatedEstimate = {measureID: -1, nodeRegionID: -1, pnlValue: -1, DateTime: -1};
+  return (
+    <div>
+      <form>
+        {pnlMeasuresdata.map((obj, index) => {
+          return(
+            <Grid>
+              <TextField
+                style={{margin: "1rem"}}
+                id={obj.measureID.toString()} 
+                variant="outlined"
+                defaultValue={pnlValuesArr[index]}
+                label="pnl Value"
+                onChange = {(e) => {
+                  pnlValuesArr[index] = parseInt(e.target.value); //null
+                  tempUpdate.measureID = obj.measureID;
+                  tempUpdate.nodeRegionID = obj.nodeRegionID;
+                  tempUpdate.pnlValue = pnlValuesArr[index];
+                  tempUpdate.DateTime = Date.now();            
+                  var item = updatedEstimates.find(x => x.measureID == tempUpdate.measureID);
+                  if (item){
+                    item.pnlValue = pnlValuesArr[index]
+                  }else{
+                    setEstimates(updatedEstimates => [...updatedEstimates, tempUpdate]);
+                  }
+                  console.log(updatedEstimates);
+                }}
+                />
+            </Grid>
+          )
+        })}
+        <Button 
+          variant="contained" 
+          color="primary" 
+          style={{margin: "1rem"}} 
+          >
+          Submit
+        </Button> 
+      </form>
+    </div>
+  );
+};
+
+export default Calculation;
